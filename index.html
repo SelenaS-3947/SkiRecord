@@ -1,98 +1,154 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>滑雪记录本Snow Diary</title>
-  <style>
-    /* 简单样式，让页面在iPad上好看点 */
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 800px; margin: 20px auto; padding: 0 16px; }
-    input, button { padding: 8px; margin: 4px 0; width: 100%; box-sizing: border-box; }
-    button { background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; }
-    .record-item { border: 1px solid #eee; padding: 12px; margin: 8px 0; border-radius: 8px; }
-    .del-btn { background: #ef4444; width: auto; float: right; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snow - 滑雪记录</title>
+    <style>
+        /* 简约大气的暗黑风格 CSS */
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --accent: #4da6ff;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 { font-size: 28px; font-weight: 600; margin-bottom: 24px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 14px; }
+        input {
+            width: 100%; padding: 12px; box-sizing: border-box;
+            background-color: #2a2a2a; border: 1px solid #333;
+            color: white; border-radius: 8px; font-size: 16px; outline: none;
+        }
+        input:focus { border-color: var(--accent); }
+        .time-inputs { display: flex; gap: 10px; }
+        button {
+            width: 100%; padding: 14px; background-color: var(--text-main);
+            color: var(--bg-color); border: none; border-radius: 8px;
+            font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s;
+        }
+        button:active { transform: scale(0.98); }
+        
+        .record-list { margin-top: 30px; }
+        .record-item {
+            background-color: var(--card-bg); padding: 15px;
+            border-radius: 8px; margin-bottom: 10px; font-size: 14px;
+            border-left: 4px solid var(--accent);
+        }
+        .summary-box {
+            position: sticky; bottom: 0; background-color: var(--bg-color);
+            padding: 20px 0; border-top: 1px solid #333; font-size: 18px; font-weight: bold; text-align: center;
+        }
+    </style>
 </head>
 <body>
-  <h1> 滑雪记录Ski Records</h1>
-  <!-- 输入表单 -->
-  <div>
-    <input type="date" id="dateInput" placeholder="滑雪日期">
-    <input type="text" id="resortInput" placeholder="雪场名称">
-    <input type="number" step="0.5" id="hoursInput" placeholder="雪时（小时）">
-    <button onclick="addRecord()">添加记录</button>
-  </div>
 
-  <h2>历史记录History</h2>
-  <div id="recordsList"></div>
-  <button onclick="exportData()">导出所有记录为文本</button>
-  <button onclick="clearAll()" style="background:#ef4444;margin-top:8px;">清空所有记录</button>
+    <h1>Snow Tracks</h1>
 
-  <script>
-    // 从本地存储读已有记录，没有就空数组（类似Java里的new ArrayList<>()）
-    function loadRecords() {
-      const data = localStorage.getItem('skiRecords');
-      return data ? JSON.parse(data) : [];
-    }
-    // 把记录存回本地存储
-    function saveRecords(records) {
-      localStorage.setItem('skiRecords', JSON.stringify(records));
-    }
-    // 添加新记录
-    function addRecord() {
-      const date = document.getElementById('dateInput').value;
-      const resort = document.getElementById('resortInput').value.trim();
-      const hours = document.getElementById('hoursInput').value;
-      if (!date || !resort || !hours) { alert('请填完所有字段'); return; }
-      const records = loadRecords();
-      records.push({ date, resort, hours });
-      saveRecords(records);
-      // 清空输入框
-      document.getElementById('dateInput').value = '';
-      document.getElementById('resortInput').value = '';
-      document.getElementById('hoursInput').value = '';
-      renderList();
-    }
-    // 删除某条记录
-    function deleteRecord(idx) {
-      const records = loadRecords();
-      records.splice(idx, 1);
-      saveRecords(records);
-      renderList();
-    }
-    // 渲染列表到页面
-    function renderList() {
-      const list = document.getElementById('recordsList');
-      const records = loadRecords();
-      if (records.length === 0) { list.innerHTML = '<p>还没有记录，快填第一条吧~</p>'; return; }
-      list.innerHTML = records.map((r, i) => `
-        <div class="record-item">
-          <button class="del-btn" onclick="deleteRecord(${i})">删除</button>
-          <p>日期：${r.date}</p>
-          <p>雪场：${r.resort}</p>
-          <p>雪时：${r.hours}小时</p>
+    <!-- 记录表单 -->
+    <div class="form-group">
+        <label>日期 (例如: 2025.12.28)</label>
+        <input type="text" id="dateInput" placeholder="YYYY.MM.DD">
+    </div>
+    <div class="form-group">
+        <label>雪场名称</label>
+        <input type="text" id="fieldInput" placeholder="例如: 可可托海国际滑雪场">
+    </div>
+    <div class="time-inputs">
+        <div class="form-group" style="flex: 1;">
+            <label>开始时间 (如 10.5)</label>
+            <input type="number" id="startInput" step="0.5">
         </div>
-      `).join('');
-    }
-    // 导出所有记录为可复制文本
-    function exportData() {
-      const records = loadRecords();
-      if (records.length === 0) { alert('没有记录可导出'); return; }
-      const text = records.map(r => `${r.date} | ${r.resort} | ${r.hours}小时`).join('\n');
-      alert('复制下面内容保存即可：\n' + text);
-    }
-    // 清空所有
-    function clearAll() {
-      if (confirm('确定要清空所有记录吗？')) {
-        localStorage.removeItem('skiRecords');
-        renderList();
-      }
-    }
-    // 页面加载时先渲染一次列表
-    renderList();
-  </script>
+        <div class="form-group" style="flex: 1;">
+            <label>结束时间 (如 15.5)</label>
+            <input type="number" id="endInput" step="0.5">
+        </div>
+    </div>
+    <button onclick="addRecord()">添加记录</button>
+
+    <!-- 记录展示区 -->
+    <div class="record-list" id="recordList"></div>
+
+    <!-- 底部总结区 -->
+    <div class="summary-box" id="summaryBox">
+        总雪时 0 个小时 &nbsp;|&nbsp; 总上雪天数 0 天
+    </div>
+
+    <script>
+        // JS逻辑：完美还原你的 Java 设计
+        let records = JSON.parse(localStorage.getItem('snowRecords')) || [];
+
+        function renderPage() {
+            const listDiv = document.getElementById('recordList');
+            const summaryDiv = document.getElementById('summaryBox');
+            listDiv.innerHTML = '';
+
+            let sumTime = 0;
+            let sumDays = records.length;
+            let fieldHrMap = {};
+
+            records.forEach(record => {
+                // 计算该记录的时长
+                let duration = record.endHr - record.startHr;
+                sumTime += duration;
+
+                // 计算该雪场的总时长
+                fieldHrMap[record.fieldName] = (fieldHrMap[record.fieldName] || 0) + duration;
+
+                // 生成报告字符串 (你的 getReport 逻辑)
+                let report = `${record.dates} ${record.startHr} - ${record.endHr} 在${record.fieldName} 滑了${duration}个小时 在该雪场总雪时为${fieldHrMap[record.fieldName]}小时`;
+                
+                // 渲染到页面
+                let div = document.createElement('div');
+                div.className = 'record-item';
+                div.innerText = report;
+                listDiv.appendChild(div);
+            });
+
+            // 渲染底部总结
+            summaryDiv.innerHTML = `总雪时 ${sumTime} 个小时 &nbsp;|&nbsp; 总上雪天数 ${sumDays} 天`;
+        }
+
+        function addRecord() {
+            const dates = document.getElementById('dateInput').value;
+            const fieldName = document.getElementById('fieldInput').value;
+            const startHr = parseFloat(document.getElementById('startInput').value);
+            const endHr = parseFloat(document.getElementById('endInput').value);
+
+            if(!dates || !fieldName || isNaN(startHr) || isNaN(endHr)) {
+                alert("请填写完整所有的信息哦！");
+                return;
+            }
+            if(endHr <= startHr) {
+                alert("结束时间必须大于开始时间！");
+                return;
+            }
+
+            // 保存到数组并写入本地存储
+            records.push({ dates, fieldName, startHr, endHr });
+            localStorage.setItem('snowRecords', JSON.stringify(records));
+            
+            // 清空输入框并刷新页面数据
+            document.getElementById('dateInput').value = '';
+            document.getElementById('fieldInput').value = '';
+            document.getElementById('startInput').value = '';
+            document.getElementById('endInput').value = '';
+            
+            renderPage();
+        }
+
+        // 初始化渲染
+        renderPage();
+    </script>
 </body>
 </html>
-
-
-
