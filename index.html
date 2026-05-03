@@ -3,120 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Snow - 滑雪记录</title>
+    <title>Snow Tracker v2</title>
     <style>
-        /* 简约大气的暗黑风格 CSS */
         :root {
             --bg-color: #121212;
             --card-bg: #1e1e1e;
             --text-main: #ffffff;
             --text-muted: #a0a0a0;
             --accent: #4da6ff;
+            --danger: #ff4d4d;
         }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
             max-width: 600px;
             margin: 0 auto;
-            padding: 20px;
-            line-height: 1.6;
+            padding: 20px 20px 100px 20px; /* 底部留够空间给总结栏 */
         }
-        h1 { font-size: 28px; font-weight: 600; margin-bottom: 24px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        h1 { font-size: 28px; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        
+        .form-card { background: var(--card-bg); padding: 20px; border-radius: 12px; margin-bottom: 25px; }
         .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 14px; }
+        label { display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 13px; }
         input {
             width: 100%; padding: 12px; box-sizing: border-box;
             background-color: #2a2a2a; border: 1px solid #333;
-            color: white; border-radius: 8px; font-size: 16px; outline: none;
+            color: white; border-radius: 8px; outline: none;
         }
         input:focus { border-color: var(--accent); }
-        .time-inputs { display: flex; gap: 10px; }
-        button {
+        
+        .row { display: flex; gap: 10px; align-items: flex-end; }
+        .divider { text-align: center; color: var(--text-muted); margin: 10px 0; font-size: 12px; position: relative; }
+        .divider::before, .divider::after { content: ""; position: absolute; top: 50%; width: 40%; height: 1px; background: #333; }
+        .divider::before { left: 0; } .divider::after { right: 0; }
+
+        button.main-btn {
             width: 100%; padding: 14px; background-color: var(--text-main);
             color: var(--bg-color); border: none; border-radius: 8px;
-            font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s;
+            font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px;
         }
-        button:active { transform: scale(0.98); }
-        
-        .record-list { margin-top: 30px; }
+
         .record-item {
             background-color: var(--card-bg); padding: 15px;
-            border-radius: 8px; margin-bottom: 10px; font-size: 14px;
+            border-radius: 8px; margin-bottom: 12px; font-size: 14px;
             border-left: 4px solid var(--accent);
+            display: flex; justify-content: space-between; align-items: center;
+            animation: fadeIn 0.3s ease;
         }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .delete-btn {
+            background: none; border: 1px solid var(--danger); color: var(--danger);
+            padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;
+            transition: 0.2s; margin-left: 10px; flex-shrink: 0;
+        }
+        .delete-btn:hover { background: var(--danger); color: white; }
+
+        /* 修复显示不全的总结栏 */
         .summary-box {
-            position: sticky; bottom: 0; background-color: var(--bg-color);
-            padding: 20px 0; border-top: 1px solid #333; font-size: 18px; font-weight: bold; text-align: center;
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background-color: #1a1a1a; padding: 20px;
+            border-top: 1px solid #333; box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;
+            z-index: 100;
         }
+        .summary-item { text-align: center; }
+        .summary-val { display: block; font-size: 20px; font-weight: bold; color: var(--accent); }
+        .summary-label { font-size: 12px; color: var(--text-muted); }
     </style>
 </head>
 <body>
 
-    <h1>Snow Tracks</h1>
+    <h1>Snow Tracks v2</h1>
 
-    <!-- 记录表单 -->
-    <div class="form-group">
-        <label>日期 (例如: 2025.12.28)</label>
-        <input type="text" id="dateInput" placeholder="YYYY.MM.DD">
-    </div>
-    <div class="form-group">
-        <label>雪场名称</label>
-        <input type="text" id="fieldInput" placeholder="例如: 可可托海国际滑雪场">
-    </div>
-    <div class="time-inputs">
-        <div class="form-group" style="flex: 1;">
-            <label>开始时间 (如 10.5)</label>
-            <input type="number" id="startInput" step="0.5">
+    <div class="form-card">
+        <div class="form-group">
+            <label>日期 & 雪场名称</label>
+            <div class="row">
+                <input type="text" id="dateInput" placeholder="2025.12.28" style="flex: 1;">
+                <input type="text" id="fieldInput" placeholder="雪场名字" style="flex: 2;">
+            </div>
         </div>
-        <div class="form-group" style="flex: 1;">
-            <label>结束时间 (如 15.5)</label>
-            <input type="number" id="endInput" step="0.5">
+
+        <div class="row">
+            <div class="form-group" style="flex: 1;">
+                <label>开始时间 (10.5)</label>
+                <input type="number" id="startInput" step="0.5" oninput="clearDuration()">
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label>结束时间 (15.5)</label>
+                <input type="number" id="endInput" step="0.5" oninput="clearDuration()">
+            </div>
         </div>
+
+        <div class="divider">或者直接输入时长</div>
+
+        <div class="form-group">
+            <label>滑雪时长 (小时)</label>
+            <input type="number" id="durationInput" placeholder="例如: 5" step="0.1" oninput="clearTimes()">
+        </div>
+
+        <button class="main-btn" onclick="addRecord()">保存记录</button>
     </div>
-    <button onclick="addRecord()">添加记录</button>
 
-    <!-- 记录展示区 -->
-    <div class="record-list" id="recordList"></div>
+    <div id="recordList"></div>
 
-    <!-- 底部总结区 -->
-    <div class="summary-box" id="summaryBox">
-        总雪时 0 个小时 &nbsp;|&nbsp; 总上雪天数 0 天
+    <div class="summary-box">
+        <div class="summary-item">
+            <span class="summary-label">总上雪天数</span>
+            <span class="summary-val" id="totalDays">0 天</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">累计总雪时</span>
+            <span class="summary-val" id="totalTime">0 小时</span>
+        </div>
     </div>
 
     <script>
-        // JS逻辑：完美还原你的 Java 设计
-        let records = JSON.parse(localStorage.getItem('snowRecords')) || [];
+        let records = JSON.parse(localStorage.getItem('snowRecordsV2')) || [];
+
+        // 互斥输入逻辑：填了时长就清空时间，反之亦然
+        function clearDuration() { document.getElementById('durationInput').value = ''; }
+        function clearTimes() { 
+            document.getElementById('startInput').value = ''; 
+            document.getElementById('endInput').value = ''; 
+        }
 
         function renderPage() {
             const listDiv = document.getElementById('recordList');
-            const summaryDiv = document.getElementById('summaryBox');
             listDiv.innerHTML = '';
-
+            
             let sumTime = 0;
-            let sumDays = records.length;
             let fieldHrMap = {};
 
-            records.forEach(record => {
-                // 计算该记录的时长
-                let duration = record.endHr - record.startHr;
-                sumTime += duration;
+            records.forEach((record, index) => {
+                sumTime += record.duration;
+                fieldHrMap[record.fieldName] = (fieldHrMap[record.fieldName] || 0) + record.duration;
 
-                // 计算该雪场的总时长
-                fieldHrMap[record.fieldName] = (fieldHrMap[record.fieldName] || 0) + duration;
-
-                // 生成报告字符串 (你的 getReport 逻辑)
-                let report = `${record.dates} ${record.startHr} - ${record.endHr} 在${record.fieldName} 滑了${duration}个小时 在该雪场总雪时为${fieldHrMap[record.fieldName]}小时`;
+                let timeDesc = record.isManual ? `${record.duration}小时(手动输入)` : `${record.startHr}-${record.endHr}`;
                 
-                // 渲染到页面
+                let report = `${record.dates} ${timeDesc} 在${record.fieldName} 滑了${record.duration}h (场馆总计:${fieldHrMap[record.fieldName]}h)`;
+                
                 let div = document.createElement('div');
                 div.className = 'record-item';
-                div.innerText = report;
+                div.innerHTML = `
+                    <span>${report}</span>
+                    <button class="delete-btn" onclick="deleteRecord(${index})">删除</button>
+                `;
                 listDiv.appendChild(div);
             });
 
-            // 渲染底部总结
-            summaryDiv.innerHTML = `总雪时 ${sumTime} 个小时 &nbsp;|&nbsp; 总上雪天数 ${sumDays} 天`;
+            document.getElementById('totalDays').innerText = records.length + " 天";
+            document.getElementById('totalTime').innerText = sumTime.toFixed(1) + " 小时";
         }
 
         function addRecord() {
@@ -124,30 +163,41 @@
             const fieldName = document.getElementById('fieldInput').value;
             const startHr = parseFloat(document.getElementById('startInput').value);
             const endHr = parseFloat(document.getElementById('endInput').value);
+            const manualDuration = parseFloat(document.getElementById('durationInput').value);
 
-            if(!dates || !fieldName || isNaN(startHr) || isNaN(endHr)) {
-                alert("请填写完整所有的信息哦！");
-                return;
-            }
-            if(endHr <= startHr) {
-                alert("结束时间必须大于开始时间！");
-                return;
+            if(!dates || !fieldName) { alert("日期和雪场名字不能为空"); return; }
+
+            let duration = 0;
+            let isManual = false;
+
+            if(!isNaN(manualDuration)) {
+                duration = manualDuration;
+                isManual = true;
+            } else if(!isNaN(startHr) && !isNaN(endHr)) {
+                if(endHr <= startHr) { alert("时间设置不合理"); return; }
+                duration = endHr - startHr;
+                isManual = false;
+            } else {
+                alert("请填写时间或时长"); return;
             }
 
-            // 保存到数组并写入本地存储
-            records.push({ dates, fieldName, startHr, endHr });
-            localStorage.setItem('snowRecords', JSON.stringify(records));
-            
-            // 清空输入框并刷新页面数据
-            document.getElementById('dateInput').value = '';
-            document.getElementById('fieldInput').value = '';
-            document.getElementById('startInput').value = '';
-            document.getElementById('endInput').value = '';
-            
+            records.push({ dates, fieldName, startHr, endHr, duration, isManual });
+            localStorage.setItem('snowRecordsV2', JSON.stringify(records));
             renderPage();
+            
+            // 清空除日期外的输入
+            document.getElementById('fieldInput').value = '';
+            clearDuration(); clearTimes();
         }
 
-        // 初始化渲染
+        function deleteRecord(index) {
+            if(confirm("确定要删除这条滑雪记录吗？")) {
+                records.splice(index, 1);
+                localStorage.setItem('snowRecordsV2', JSON.stringify(records));
+                renderPage();
+            }
+        }
+
         renderPage();
     </script>
 </body>
