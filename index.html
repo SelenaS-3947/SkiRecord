@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Snow Tracker v2</title>
+    <title>Snow Tracker v2.1</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -19,7 +19,7 @@
             color: var(--text-main);
             max-width: 600px;
             margin: 0 auto;
-            padding: 20px 20px 100px 20px; /* 底部留够空间给总结栏 */
+            padding: 20px 20px 120px 20px;
         }
         h1 { font-size: 28px; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
         
@@ -49,23 +49,19 @@
             border-radius: 8px; margin-bottom: 12px; font-size: 14px;
             border-left: 4px solid var(--accent);
             display: flex; justify-content: space-between; align-items: center;
-            animation: fadeIn 0.3s ease;
         }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .delete-btn {
             background: none; border: 1px solid var(--danger); color: var(--danger);
             padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;
-            transition: 0.2s; margin-left: 10px; flex-shrink: 0;
+            margin-left: 10px; flex-shrink: 0;
         }
-        .delete-btn:hover { background: var(--danger); color: white; }
 
-        /* 修复显示不全的总结栏 */
         .summary-box {
             position: fixed; bottom: 0; left: 0; right: 0;
             background-color: #1a1a1a; padding: 20px;
-            border-top: 1px solid #333; box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
-            display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;
+            border-top: 1px solid #333;
+            display: flex; justify-content: center; gap: 40px;
             z-index: 100;
         }
         .summary-item { text-align: center; }
@@ -75,15 +71,16 @@
 </head>
 <body>
 
-    <h1>Snow Tracks v2</h1>
+    <h1>Snow Tracks</h1>
 
     <div class="form-card">
         <div class="form-group">
-            <label>日期 & 雪场名称</label>
-            <div class="row">
-                <input type="text" id="dateInput" placeholder="2025.12.28" style="flex: 1;">
-                <input type="text" id="fieldInput" placeholder="雪场名字" style="flex: 2;">
-            </div>
+            <label>日期 (例如: 2025.12.28)</label>
+            <input type="text" id="dateInput" placeholder="YYYY.MM.DD">
+        </div>
+        <div class="form-group">
+            <label>雪场名称</label>
+            <input type="text" id="fieldInput" placeholder="请输入雪场名">
         </div>
 
         <div class="row">
@@ -97,11 +94,11 @@
             </div>
         </div>
 
-        <div class="divider">或者直接输入时长</div>
+        <div class="divider">或者</div>
 
         <div class="form-group">
             <label>滑雪时长 (小时)</label>
-            <input type="number" id="durationInput" placeholder="例如: 5" step="0.1" oninput="clearTimes()">
+            <input type="number" id="durationInput" placeholder="直接输入滑了多久" step="0.1" oninput="clearTimes()">
         </div>
 
         <button class="main-btn" onclick="addRecord()">保存记录</button>
@@ -115,15 +112,14 @@
             <span class="summary-val" id="totalDays">0 天</span>
         </div>
         <div class="summary-item">
-            <span class="summary-label">累计总雪时</span>
-            <span class="summary-val" id="totalTime">0 小时</span>
+            <span class="summary-label">总雪时</span>
+            <span class="summary-val" id="totalTime">0 个小时</span>
         </div>
     </div>
 
     <script>
-        let records = JSON.parse(localStorage.getItem('snowRecordsV2')) || [];
+        let records = JSON.parse(localStorage.getItem('snowRecordsV3')) || [];
 
-        // 互斥输入逻辑：填了时长就清空时间，反之亦然
         function clearDuration() { document.getElementById('durationInput').value = ''; }
         function clearTimes() { 
             document.getElementById('startInput').value = ''; 
@@ -139,11 +135,15 @@
 
             records.forEach((record, index) => {
                 sumTime += record.duration;
+                // 计算该雪场的累计时长
                 fieldHrMap[record.fieldName] = (fieldHrMap[record.fieldName] || 0) + record.duration;
 
-                let timeDesc = record.isManual ? `${record.duration}小时(手动输入)` : `${record.startHr}-${record.endHr}`;
+                // 格式化时间段显示
+                let timeRange = record.isManual ? "" : (record.startHr + "-" + record.endHr);
                 
-                let report = `${record.dates} ${timeDesc} 在${record.fieldName} 滑了${record.duration}h (场馆总计:${fieldHrMap[record.fieldName]}h)`;
+                // 严格按照你给出的格式拼接字符串
+                // dates + " " + startHr + "-" + endHr + " 在" + fieldName + "滑了" + time + "个小时 在该雪场总雪时为" + fieldHr + "小时"
+                let report = record.dates + " " + timeRange + " 在" + record.fieldName + "滑了" + record.duration + "个小时 在该雪场总雪时为" + fieldHrMap[record.fieldName] + "小时";
                 
                 let div = document.createElement('div');
                 div.className = 'record-item';
@@ -155,17 +155,23 @@
             });
 
             document.getElementById('totalDays').innerText = records.length + " 天";
-            document.getElementById('totalTime').innerText = sumTime.toFixed(1) + " 小时";
+            document.getElementById('totalTime').innerText = sumTime.toFixed(1) + " 个小时";
         }
 
         function addRecord() {
-            const dates = document.getElementById('dateInput').value;
-            const fieldName = document.getElementById('fieldInput').value;
-            const startHr = parseFloat(document.getElementById('startInput').value);
-            const endHr = parseFloat(document.getElementById('endInput').value);
-            const manualDuration = parseFloat(document.getElementById('durationInput').value);
+            const dateInput = document.getElementById('dateInput');
+            const fieldInput = document.getElementById('fieldInput');
+            const startInput = document.getElementById('startInput');
+            const endInput = document.getElementById('endInput');
+            const durationInput = document.getElementById('durationInput');
 
-            if(!dates || !fieldName) { alert("日期和雪场名字不能为空"); return; }
+            const dates = dateInput.value;
+            const fieldName = fieldInput.value;
+            const startHr = parseFloat(startInput.value);
+            const endHr = parseFloat(endInput.value);
+            const manualDuration = parseFloat(durationInput.value);
+
+            if(!dates || !fieldName) { alert("请填写日期和雪场名称"); return; }
 
             let duration = 0;
             let isManual = false;
@@ -174,26 +180,29 @@
                 duration = manualDuration;
                 isManual = true;
             } else if(!isNaN(startHr) && !isNaN(endHr)) {
-                if(endHr <= startHr) { alert("时间设置不合理"); return; }
+                if(endHr <= startHr) { alert("结束时间必须大于开始时间"); return; }
                 duration = endHr - startHr;
                 isManual = false;
             } else {
-                alert("请填写时间或时长"); return;
+                alert("请输入滑雪时长或起止时间"); return;
             }
 
             records.push({ dates, fieldName, startHr, endHr, duration, isManual });
-            localStorage.setItem('snowRecordsV2', JSON.stringify(records));
+            localStorage.setItem('snowRecordsV3', JSON.stringify(records));
             renderPage();
             
-            // 清空除日期外的输入
-            document.getElementById('fieldInput').value = '';
-            clearDuration(); clearTimes();
+            // --- 修复：保存后清空所有输入框 ---
+            dateInput.value = '';
+            fieldInput.value = '';
+            startInput.value = '';
+            endInput.value = '';
+            durationInput.value = '';
         }
 
         function deleteRecord(index) {
-            if(confirm("确定要删除这条滑雪记录吗？")) {
+            if(confirm("确定要删除这条记录吗？")) {
                 records.splice(index, 1);
-                localStorage.setItem('snowRecordsV2', JSON.stringify(records));
+                localStorage.setItem('snowRecordsV3', JSON.stringify(records));
                 renderPage();
             }
         }
